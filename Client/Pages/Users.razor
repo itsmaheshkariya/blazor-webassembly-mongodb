@@ -1,0 +1,91 @@
+@page "/"
+@using Fullstack.Shared
+@inject HttpClient Http
+
+<div class="row">
+    <div class="col-lg-6">
+        <br>
+        <h3>Register</h3>
+        <input class="form-control mb-3" @bind-value="newUser.Name" placeholder="Enter Name"/>
+        <input class="form-control mb-3" @bind-value="newUser.Email" placeholder="Enter Email"/>
+        <input class="form-control mb-3" @bind-value="newUser.Password" placeholder="Enter Password"/>
+        <button class="btn btn-primary btn-block" @onclick="SubmitUser"> Submit</button>
+    </div>
+    <div class="col-lg-6">
+
+@if (users == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <br>
+    <h3>Users</h3>
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Password</th>
+                <th>
+                    Edit
+                </th>
+                <th>
+                    Delete
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Name</td>
+                    <td>@user.Email</td>
+                    <td>@user.Password</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="@(()=>GetUser(@user.Id))">Edit</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="@(()=>DeleteUser(@user.Id))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
+</div>
+@code {
+    private User[] users;
+
+    private bool edit = false;
+    private User newUser = new User();
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Http.GetFromJsonAsync<User[]>("api/user");
+    }
+    private async Task DeleteUser(string id){
+        await Http.DeleteAsync("api/user/"+id);
+        await OnInitializedAsync();
+    }
+    private async Task GetUser(string id){
+        newUser = await Http.GetFromJsonAsync<User>("api/user/"+id);
+        edit = true;
+    }
+    private async Task SubmitUser(){
+        if(edit == false){
+            await Http.PostAsJsonAsync<User>("api/user",newUser);
+            await OnInitializedAsync();
+            newUser = new User();
+
+        }else{
+            await Http.PutAsJsonAsync<User>("api/user/"+newUser.Id,newUser);
+            newUser = new User();
+            edit = false;
+            await OnInitializedAsync();
+        }
+    }
+
+}
